@@ -3,15 +3,16 @@
     <audio
       :src="audioSrc"
       ref="audioPlayer"
-      controls
       @ended="endPlaying" />
-    <button
-      type="button"
-      @click="togglePlay">
-      <span v-if="!audioStatus.status || ['ENDED', 'PAUSED'].includes(audioStatus.status)">Play</span>
-      <span v-if="audioStatus.status === 'PLAYING'">Pause</span>
-    </button>
     <div class="visualiser-container">
+      <div class="visualiser-controls">
+        <button
+          type="button"
+          @click="togglePlay">
+          <span v-if="!audioStatus.status || ['ENDED', 'PAUSED'].includes(audioStatus.status)">Play</span>
+          <span v-if="audioStatus.status === 'PLAYING'">Pause</span>
+        </button>
+      </div>
       <div
         v-if="!!processedBuffer.length"
         class="visualiser"
@@ -195,20 +196,34 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  margin-top: 60px;
-  height: 100vh;
+  margin-top: 20vh;
   display: flex;
   justify-content: center;
   align-items: center;
   flex-flow: column;
   .visualiser-container {
-    width: 60vw;
+    width: 80vw;
     height: 100px;
-    margin: 24px;
     padding: 24px;
     border-radius: 2rem;
     background-color: #2c3e50;
+    display: flex;
+    flex-flow: row;
+    .visualiser-controls {
+      min-width: 100px;
+      height: 100%;
+      margin: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      button {
+        height: 60px;
+        width: 60px;
+        border-radius: 50%;
+      }
+    }
     .visualiser {
+      width: 100%;
       position: relative;
       display: flex;
       align-items: center;
