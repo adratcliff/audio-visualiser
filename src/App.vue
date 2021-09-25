@@ -11,20 +11,20 @@
       <span v-if="!audioStatus.status || ['ENDED', 'PAUSED'].includes(audioStatus.status)">Play</span>
       <span v-if="audioStatus.status === 'PLAYING'">Pause</span>
     </button>
-    <div
-      v-if="!!processedBuffer.length"
-      class="visualiser"
-      ref="visualiser"
-      @mousedown="jumpTo" >
-      <span
-        v-for="bar in samples"
-        :key="`visualiser-bar-${bar}`"
-        :style="{
-          width: `calc(${ (1 / samples * 100) }% - 1px)`,
-          height: `${ processedBuffer[bar] * 100 }%`,
-        }"
-        class="visualiser-bar" />
-      <div class="visualiser-indicator-container">
+    <div class="visualiser-container">
+      <div
+        v-if="!!processedBuffer.length"
+        class="visualiser"
+        ref="visualiser"
+        @mousedown="jumpTo" >
+        <span
+          v-for="bar in samples"
+          :key="`visualiser-bar-${bar}`"
+          :style="{
+            width: `calc(${ (1 / samples * 100) }% - 1px)`,
+            height: `${ processedBuffer[bar] * 100 }%`,
+          }"
+          class="visualiser-bar" />
         <span
           class="visualiser-indicator"
           ref="indicator"
@@ -157,7 +157,7 @@ export default {
       this.$refs.audioPlayer.pause();
     },
     setScrubPosition(evt) {
-      this.scrubPosition = Math.min(Math.max(evt.pageX - this.$refs.visualiser.offsetLeft - 24, 0), this.$refs.visualiser.clientWidth - 48);
+      this.scrubPosition = Math.min(Math.max(evt.pageX - this.$refs.visualiser.offsetLeft, 0), this.$refs.visualiser.clientWidth);
     },
     scrubMove(evt) {
       if (!this.scrubbing) return;
@@ -165,7 +165,7 @@ export default {
     },
     scrubEnd() {
       if (!this.scrubbing) return;
-      this.play(this.scrubPosition / (this.$refs.visualiser.clientWidth - 48));
+      this.play(this.scrubPosition / this.$refs.visualiser.clientWidth);
       this.scrubbing = false;
       this.scrubPosition = null;
     },
@@ -201,29 +201,22 @@ export default {
   justify-content: center;
   align-items: center;
   flex-flow: column;
-  .visualiser {
+  .visualiser-container {
     width: 60vw;
     height: 100px;
     margin: 24px;
     padding: 24px;
     border-radius: 2rem;
     background-color: #2c3e50;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: space-evenly;
-    .visualiser-bar {
-      max-height: 90px;
-      background-color: #fafafa;
-    }
-    .visualiser-indicator-container {
-      width: calc(100% - 48px);
-      height: 100%;
-      position: absolute;
-      bottom: 0;
+    .visualiser {
+      position: relative;
       display: flex;
       align-items: center;
-      pointer-events: none;
+      justify-content: space-evenly;
+      .visualiser-bar {
+        max-height: 90px;
+        background-color: #fafafa;
+      }
       .visualiser-indicator {
         width: 2px;
         height: 90%;
