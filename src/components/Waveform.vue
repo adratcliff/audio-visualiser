@@ -51,7 +51,7 @@ export default {
       context: null,
       lastTick: null,
       lastTickInterval: null,
-      samples: 300,
+      samples: 15,
       scrubbing: false,
       scrubPosition: null,
     };
@@ -156,11 +156,19 @@ export default {
       this.startScrub();
       this.setScrubPosition(evt);
     },
+    setDivisions() {
+      this.samples = Math.max(this.$refs.visualiser.clientWidth - 100, 15);
+    },
   },
   mounted() {
     this.lastTickInterval = setInterval(() => this.lastTick = +new Date());
+
+    this.setDivisions();
+
     document.addEventListener('mouseup', this.scrubEnd);
     document.addEventListener('mousemove', this.scrubMove);
+
+    window.addEventListener('resize', this.setDivisions);
   },
   beforeDestroy() {
     clearInterval(this.lastTickInterval);
