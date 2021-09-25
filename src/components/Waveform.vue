@@ -17,10 +17,10 @@
       ref="visualiser"
       @mousedown="jumpTo" >
       <span
-        v-for="bar in samples"
+        v-for="bar in divisions"
         :key="`visualiser-bar-${bar}`"
         :style="{
-          width: `calc(${ (1 / samples * 100) }% - 1px)`,
+          width: `calc(${ (1 / divisions * 100) }% - 1px)`,
           height: `${ processedBuffer[bar] * 100 }%`,
         }"
         class="visualiser-bar" />
@@ -51,7 +51,7 @@ export default {
       context: null,
       lastTick: null,
       lastTickInterval: null,
-      samples: 15,
+      divisions: 15,
       scrubbing: false,
       scrubPosition: null,
     };
@@ -63,7 +63,7 @@ export default {
       const rawData = this.buffer.getChannelData(0);
       if (!rawData.length) return [];
 
-      const divisionSize = Math.floor(rawData.length / this.samples);
+      const divisionSize = Math.floor(rawData.length / this.divisions);
       // Filter from thousands of data to a few by averaging over blocks
       const filteredData = rawData.reduce((acc, cur, i) => {
         const division = Math.floor(i / divisionSize);
@@ -74,7 +74,7 @@ export default {
 
         acc[division] += Math.abs(cur);
         return acc;
-      }, Array.from(new Array(this.samples)).map(() => 0)).map(val => val / divisionSize);
+      }, Array.from(new Array(this.divisions)).map(() => 0)).map(val => val / divisionSize);
 
       // Normalise
       const max = Math.max(...filteredData);
@@ -157,7 +157,7 @@ export default {
       this.setScrubPosition(evt);
     },
     setDivisions() {
-      this.samples = Math.max(this.$refs.visualiser.clientWidth - 100, 15);
+      this.divisions = Math.max(this.$refs.visualiser.clientWidth - 100, 15);
     },
   },
   mounted() {
