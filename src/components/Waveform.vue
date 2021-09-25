@@ -13,7 +13,6 @@
       </button>
     </div>
     <div
-      v-if="!!processedBuffer.length"
       class="visualiser"
       ref="visualiser"
       @mousedown="jumpTo" >
@@ -100,7 +99,7 @@ export default {
         .then(audioBuffer => this.buffer = audioBuffer);
     },
     togglePlay() {
-      const promise = !Object.keys(this.buffer).length ? this.getFile() : Promise.resolve();
+      const promise = (!this.buffer || !Object.keys(this.buffer).length) ? this.getFile() : Promise.resolve();
       promise.then(() => {
         switch (this.audioStatus.status) {
           case 'PLAYING':
