@@ -3,11 +3,13 @@
     <audio
       :src="audioSrc"
       ref="audioPlayer"
-      controls />
+      controls
+      @ended="endPlaying" />
     <button
       type="button"
-      @click="play">
-      Play
+      @click="togglePlay">
+      <span v-if="!audioStatus.status || ['ENDED', 'PAUSED'].includes(audioStatus.status)">Play</span>
+      <span v-if="audioStatus.status === 'PLAYING'">Pause</span>
     </button>
     <div class="visualiser" v-if="!!processedBuffer.length">
       <span
@@ -18,12 +20,14 @@
           height: `${ processedBuffer[bar] * 100 }%`,
         }"
         class="visualiser-bar" />
-      <span
-        class="visualiser-indicator"
-        ref="indicator"
-        :style="{
-          left: `${indicatorPos}px`,
-        }" />
+      <div class="visualiser-indicator-container">
+        <span
+          class="visualiser-indicator"
+          ref="indicator"
+          :style="{
+            left: `${indicatorProgress}%`
+          }" />
+      </div>
     </div>
   </div>
 </template>
@@ -36,10 +40,12 @@ export default {
   data() {
     return {
       audioSrc: require('./assets/short.wav'),
+      audioStatus: {},
       buffer: null,
       context: null,
-      samples: 100,
-      indicatorPos: 24,
+      lastTick: null,
+      lastTickInterval: null,
+      samples: 10,
     };
   },
   computed: {
@@ -66,6 +72,17 @@ export default {
       const max = Math.max(...filteredData);
       return filteredData.map(val => val * 1 / max);
     },
+    indicatorProgress() {
+      if (!('offset' in this.audioStatus)) return 0;
+      if (!('start' in this.audioStatus)) return this.audioStatus.offset;
+      if ('status' in this.audioStatus) {
+        if (this.audioStatus.status === 'ENDED') return 0;
+        if (this.audioStatus.status === 'PAUSED') return this.audioStatus.offset;
+      }
+
+      const timePassed = (this.lastTick - this.audioStatus.start) / 1000;
+      return Math.min(this.audioStatus.offset + (timePassed / this.buffer.duration) * 100, 100);
+    },
   },
   methods: {
     getFile() {
@@ -75,14 +92,61 @@ export default {
         .then(arrayBuffer => this.context.decodeAudioData(arrayBuffer))
         .then(audioBuffer => this.buffer = audioBuffer);
     },
+    togglePlay() {
+      const promise = !Object.keys(this.buffer).length ? this.getFile() : Promise.resolve();
+      promise.then(() => {
+        if (!('status' in this.audioStatus)) {
+          this.play();
+          return;
+        }
+
+        switch (this.audioStatus.status) {
+          case 'PLAYING':
+            this.pause();
+            break;
+          case 'PAUSED':
+            this.resumePlay();
+            break;
+          case 'ENDED':
+          default:
+            this.play();
+            break;
+        }
+      });
+    },
     play() {
-      this.getFile().then(() => {
-        console.log(this.buffer)
-        this.$refs.audioPlayer.play();
-      })
+      this.$refs.audioPlayer.play();
+      this.audioStatus = {
+        start: +new Date(),
+        status: 'PLAYING',
+        offset: 0,
+      };
+    },
+    pause() {
+      this.$refs.audioPlayer.pause();
+      this.audioStatus = {
+        status: 'PAUSED',
+        offset: this.indicatorProgress,
+      };
+    },
+    resumePlay() {
+      this.$refs.audioPlayer.play();
+      this.audioStatus = {
+        ...this.audioStatus,
+        status: 'PLAYING',
+        start: +new Date(),
+      };
+    },
+    endPlaying() {
+      this.audioStatus.status = 'ENDED';
     },
   },
+  mounted() {
+    this.lastTickInterval = setInterval(() => this.lastTick = +new Date());
+  },
   beforeDestroy() {
+    clearInterval(this.lastTickInterval);
+    this.lastTickInterval = null;
     if (!this.context) return;
     this.context.close();
   },
@@ -117,11 +181,19 @@ export default {
       max-height: 90px;
       background-color: #fafafacc;
     }
-    .visualiser-indicator {
-      width: 2px;
-      height: 90%;
-      background-color: red;
+    .visualiser-indicator-container {
+      width: calc(100% - 48px);
+      height: 100%;
       position: absolute;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      .visualiser-indicator {
+        width: 2px;
+        height: 90%;
+        background-color: red;
+        position: absolute;
+      }
     }
   }
 }
