@@ -11,7 +11,11 @@
       <span v-if="!audioStatus.status || ['ENDED', 'PAUSED'].includes(audioStatus.status)">Play</span>
       <span v-if="audioStatus.status === 'PLAYING'">Pause</span>
     </button>
-    <div class="visualiser" v-if="!!processedBuffer.length">
+    <div
+      v-if="!!processedBuffer.length"
+      class="visualiser"
+      ref="visualiser"
+      @mousedown="jumpTo" >
       <span
         v-for="bar in samples"
         :key="`visualiser-bar-${bar}`"
@@ -25,8 +29,12 @@
           class="visualiser-indicator"
           ref="indicator"
           :style="{
-            left: `${indicatorProgress}%`
-          }" />
+            left: scrubPosition ? `${scrubPosition}px` : `${indicatorProgress}%`,
+          }"
+          :class="{
+            scrubbing: scrubPosition !== null,
+          }"
+          @mousedown.stop="startScrub" />
       </div>
     </div>
   </div>
@@ -45,7 +53,9 @@ export default {
       context: null,
       lastTick: null,
       lastTickInterval: null,
-      samples: 10,
+      samples: 300,
+      scrubbing: false,
+      scrubPosition: null,
     };
   },
   computed: {
@@ -140,9 +150,24 @@ export default {
     endPlaying() {
       this.audioStatus.status = 'ENDED';
     },
+    startScrub(evt) {
+      this.scrubbing = true;
+    },
+    scrubMove(evt) {
+      if (!this.scrubbing) return;
+      this.scrubPosition = Math.min(Math.max(evt.pageX - this.$refs.visualiser.offsetLeft - 24, 0), this.$refs.visualiser.clientWidth - 48);
+    },
+    scrubEnd(evt) {
+      this.scrubbing = false;
+      this.scrubPosition = null;
+    },
+    jumpTo(evt) {
+    },
   },
   mounted() {
     this.lastTickInterval = setInterval(() => this.lastTick = +new Date());
+    document.addEventListener('mouseup', this.scrubEnd);
+    document.addEventListener('mousemove', this.scrubMove);
   },
   beforeDestroy() {
     clearInterval(this.lastTickInterval);
@@ -179,7 +204,7 @@ export default {
     justify-content: space-evenly;
     .visualiser-bar {
       max-height: 90px;
-      background-color: #fafafacc;
+      background-color: #fafafa;
     }
     .visualiser-indicator-container {
       width: calc(100% - 48px);
@@ -188,11 +213,21 @@ export default {
       bottom: 0;
       display: flex;
       align-items: center;
+      pointer-events: none;
       .visualiser-indicator {
         width: 2px;
         height: 90%;
-        background-color: red;
+        background-color: #e81313;
         position: absolute;
+        pointer-events: all;
+        cursor: grab;
+        transition: box-shadow ease 100ms;
+        &.scrubbing {
+          cursor: grabbing;
+        }
+        &:not(.scrubbing):hover {
+          box-shadow: 0px 0px 10px 1px #7f0000;
+        }
       }
     }
   }
