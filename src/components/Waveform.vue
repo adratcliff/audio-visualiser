@@ -45,7 +45,9 @@ export default {
     data() {
     return {
       audioSrc: require('../assets/short.wav'),
-      audioStatus: {},
+      audioStatus: {
+        status: '',
+      },
       buffer: null,
       context: null,
       lastTick: null,
@@ -82,10 +84,8 @@ export default {
     indicatorProgress() {
       if (!('offset' in this.audioStatus)) return 0;
       if (!('start' in this.audioStatus)) return this.audioStatus.offset;
-      if ('status' in this.audioStatus) {
-        if (this.audioStatus.status === 'ENDED') return 0;
-        if (this.audioStatus.status === 'PAUSED') return this.audioStatus.offset;
-      }
+      if (this.audioStatus.status === 'ENDED') return 0;
+      if (this.audioStatus.status === 'PAUSED') return this.audioStatus.offset;
 
       const timePassed = (this.lastTick - this.audioStatus.start) / 1000;
       return Math.min((this.audioStatus.offset + (timePassed / this.buffer.duration)) * 100, 100);
@@ -102,17 +102,12 @@ export default {
     togglePlay() {
       const promise = !Object.keys(this.buffer).length ? this.getFile() : Promise.resolve();
       promise.then(() => {
-        if (!('status' in this.audioStatus)) {
-          this.play();
-          return;
-        }
-
         switch (this.audioStatus.status) {
           case 'PLAYING':
             this.pause();
             break;
           case 'PAUSED':
-            this.resumePlay();
+            this.play(this.audioStatus.offset / 100);
             break;
           case 'ENDED':
           default:
@@ -136,14 +131,6 @@ export default {
       this.audioStatus = {
         status: 'PAUSED',
         offset: this.indicatorProgress,
-      };
-    },
-    resumePlay() {
-      this.$refs.audioPlayer.play();
-      this.audioStatus = {
-        ...this.audioStatus,
-        status: 'PLAYING',
-        start: +new Date(),
       };
     },
     endPlaying() {
