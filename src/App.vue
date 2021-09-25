@@ -91,7 +91,7 @@ export default {
       }
 
       const timePassed = (this.lastTick - this.audioStatus.start) / 1000;
-      return Math.min(this.audioStatus.offset + (timePassed / this.buffer.duration) * 100, 100);
+      return Math.min((this.audioStatus.offset + (timePassed / this.buffer.duration)) * 100, 100);
     },
   },
   methods: {
@@ -124,12 +124,14 @@ export default {
         }
       });
     },
-    play() {
+    play(offset=0) {
+      this.$refs.audioPlayer.currentTime = this.buffer.duration * offset;
       this.$refs.audioPlayer.play();
+
       this.audioStatus = {
         start: +new Date(),
         status: 'PLAYING',
-        offset: 0,
+        offset,
       };
     },
     pause() {
@@ -150,18 +152,26 @@ export default {
     endPlaying() {
       this.audioStatus.status = 'ENDED';
     },
-    startScrub(evt) {
+    startScrub() {
       this.scrubbing = true;
+      this.$refs.audioPlayer.pause();
+    },
+    setScrubPosition(evt) {
+      this.scrubPosition = Math.min(Math.max(evt.pageX - this.$refs.visualiser.offsetLeft - 24, 0), this.$refs.visualiser.clientWidth - 48);
     },
     scrubMove(evt) {
       if (!this.scrubbing) return;
-      this.scrubPosition = Math.min(Math.max(evt.pageX - this.$refs.visualiser.offsetLeft - 24, 0), this.$refs.visualiser.clientWidth - 48);
+      this.setScrubPosition(evt);
     },
-    scrubEnd(evt) {
+    scrubEnd() {
+      if (!this.scrubbing) return;
+      this.play(this.scrubPosition / (this.$refs.visualiser.clientWidth - 48));
       this.scrubbing = false;
       this.scrubPosition = null;
     },
     jumpTo(evt) {
+      this.startScrub();
+      this.setScrubPosition(evt);
     },
   },
   mounted() {
